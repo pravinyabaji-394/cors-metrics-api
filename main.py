@@ -10,7 +10,7 @@ app = FastAPI()
 # CORS: only this origin is allowed
 ALLOWED_ORIGIN = "https://dash-6qebk8.example.com"
 
-# TODO: CHANGE THIS to your real email used in the course/grader
+# Your course/grader email
 YOUR_EMAIL = "24f1001951@ds.study.iitm.ac.in"
 
 
@@ -38,6 +38,7 @@ def apply_cors_if_allowed(origin: str | None, response: Response):
 # 2) Preflight handler: OPTIONS /stats
 @app.options("/stats")
 async def stats_preflight(
+    request: Request,
     response: Response,
     origin: str | None = Header(default=None, alias="Origin"),
     access_control_request_method: str | None = Header(
@@ -47,6 +48,10 @@ async def stats_preflight(
         default=None, alias="Access-Control-Request-Headers"
     ),
 ):
+    # Make sure we have origin (some clients might use lowercase)
+    if origin is None:
+        origin = request.headers.get("origin")
+
     # Only allowed origin gets ACAO header
     apply_cors_if_allowed(origin, response)
 
@@ -58,8 +63,8 @@ async def stats_preflight(
             access_control_request_headers or "*"
         )
 
-    # Empty 200 OK response is enough for preflight
-    return Response(status_code=200)
+    # IMPORTANT: return the same response object (NOT a new Response())
+    return response
 
 
 # 3) Main endpoint: GET /stats?values=1,2,3
